@@ -16,14 +16,14 @@ The lab was built following the MyDFIR 5-part Active Directory series, with seve
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│              NAT Network: 192.168.10.0/24            │
-│                                                      │
+│              NAT Network: 192.168.10.0/24           │
+│                                                     │
 │  ┌──────────────┐        ┌──────────────────────┐   │
 │  │  Kali Linux  │        │   Windows 11 Ent.    │   │
-│  │  (Attacker)  │───────▶│   (Target Machine)   │   │
+│  │  (Attacker)  │──────▶│   (Target Machine)    │  |
 │  │192.168.10.250│  RDP   │  192.168.10.100      │   │
 │  └──────────────┘ Attack └──────────┬───────────┘   │
-│                                     │ Logs           │
+│                                     │ Logs          │
 │  ┌──────────────┐        ┌──────────▼───────────┐   │
 │  │ Win Server   │        │   Ubuntu Server      │   │
 │  │ 2022 (DC)    │        │   Splunk SIEM        │   │
