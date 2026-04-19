@@ -11,7 +11,7 @@ On **Windows Server 2022 (AD-SERVER01)**:
 
 1. Open **Server Manager** → Add Roles and Features
 2. Role-based installation → select local server
-3. Check ✅ **Active Directory Domain Services**
+3. Check **Active Directory Domain Services**
 4. Click **Add Features** in the popup
 5. Next through all screens → **Install**
 6. Waited for installation to complete
