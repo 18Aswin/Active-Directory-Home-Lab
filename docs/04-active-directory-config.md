@@ -145,7 +145,7 @@ PORT     STATE SERVICE
 3389/tcp open  ms-wbt-server
 ```
 
-RDP confirmed open. ✅
+RDP confirmed open.
 
 ---
 
