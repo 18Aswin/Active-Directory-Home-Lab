@@ -52,7 +52,7 @@ All VMs need to communicate with each other. This requires a shared NAT Network 
 4. Settings:
    - Name: `AD-Project`
    - IPv4 Prefix: `192.168.10.0/24`
-   - Enable DHCP: ✅ checked
+   - Enable DHCP: checked
 5. Apply → OK
 
 > All 4 VMs were later configured to use this same NAT Network (`AD-Project`) so they can communicate with each other.
