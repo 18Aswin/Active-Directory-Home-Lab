@@ -422,8 +422,7 @@ index=endpoint EventCode=13 TargetObject="*DisableRealtimeMonitoring*"
 
 ## Key Findings
 
-1. **SwiftOnSecurity Sysmon config outperforms defaults** — T1136.001 detected 12 events vs. zero in the reference tutorial.
-2. **Detection gap identified for T1562.001** — Defense Evasion techniques require additional Sysmon tuning.
-3. **High-volume telemetry from T1059.001** — 524 events in 15 minutes highlights the need for alert tuning to reduce noise.
+1. **Detection gap identified for T1562.001** — Defense Evasion techniques require additional Sysmon tuning.
+2. **High-volume telemetry from T1059.001** — 524 events in 15 minutes highlights the need for alert tuning to reduce noise.
 
 ---
