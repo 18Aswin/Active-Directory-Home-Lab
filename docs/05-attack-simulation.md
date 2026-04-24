@@ -203,6 +203,3 @@ The complete lifecycle of the attack was captured:
 | Create Local Account (T1136.001) | Atomic Red Team | 12 events, 6 event codes |
 
 ---
-
-## Next Step
-[Deviations from Tutorial →](06-deviations-from-tutorial.md)
