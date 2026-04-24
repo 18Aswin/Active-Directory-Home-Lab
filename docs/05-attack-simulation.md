@@ -1,7 +1,7 @@
 # Part 5 — Attack Simulation & Detection
 
 ## Objective
-Simulate an RDP brute force attack from Kali Linux targeting the domain user EWhite on the Windows 11 machine, detect it in Splunk using Windows Event IDs, then execute MITRE ATT&CK technique T1136.001 using Atomic Red Team and analyze the telemetry.
+Simulate multiple attacks from Kali Linux and via Atomic Red Team targeting the domain user EWhite on the Windows 11 machine, detect them in Splunk using Windows Event IDs, and analyze telemetry across the MITRE ATT&CK framework.
 
 ---
 
@@ -63,7 +63,7 @@ hydra -l EWhite -P ~/Desktop/AD-Project/passwords.txt rdp://192.168.10.100
 
 ---
 
-## Phase 2 — Detecting the Attack in Splunk
+## Phase 2 — Detecting the RDP Brute Force in Splunk
 
 Opened Splunk at `http://192.168.10.10:8000` → Search & Reporting.
 
@@ -142,11 +142,16 @@ Typed `Y` when prompted. Installation downloaded all atomic test modules.
 
 **Verified installation:**
 
-File Explorer → `C:\AtomicRedTeam\atomics\` — folder present with all technique folders 
+File Explorer → `C:\AtomicRedTeam\atomics\` — folder present with all technique folders
+
+> **Important:** The Atomic Red Team module must be imported at the start of every new PowerShell session:
+> ```powershell
+> Import-Module "C:\AtomicRedTeam\invoke-atomicredteam\Invoke-AtomicRedTeam.psd1" -Force
+> ```
 
 ---
 
-## Phase 4 — Execute T1136.001 (Create Local Account)
+## Phase 4 — T1136.001 (Create Local Account)
 
 This technique simulates an attacker creating a local user account to maintain persistence on a compromised machine.
 
@@ -160,9 +165,7 @@ Invoke-AtomicTest T1136.001
 
 Atomic Red Team created a new local user (`NewLocalUser`), then automatically cleaned it up after the test.
 
----
-
-## Phase 5 — Detecting T1136.001 in Splunk
+### Detecting T1136.001 in Splunk
 
 ```
 index=endpoint NewLocalUser
@@ -195,11 +198,232 @@ The complete lifecycle of the attack was captured:
 
 ---
 
-## Summary of Detections
+## Phase 5 — T1059.001 (PowerShell Execution)
 
-| Attack | Tool Used | Splunk Result |
-|---|---|---|
-| RDP Brute Force | Hydra | Detected via Event IDs 4625 + 4624 |
-| Create Local Account (T1136.001) | Atomic Red Team | 12 events, 6 event codes |
+This technique simulates an attacker executing malicious commands via PowerShell.
+
+**MITRE ATT&CK Reference:** https://attack.mitre.org/techniques/T1059/001/
+
+### Run the Test
+
+```powershell
+Invoke-AtomicTest T1059.001
+```
+
+### Detecting T1059.001 in Splunk
+
+```
+index=endpoint technique_id=T1059
+```
+
+**Result: 524 events detected in 15 minutes**
+
+### Analysis
+
+The high event count reflects the broad range of PowerShell activity that Sysmon and the Windows event log captured — script block logging, process creation, and command-line argument logging all contributed to the telemetry.
+
+---
+
+## Phase 6 — T1087.001 (Local Account Discovery)
+
+This technique simulates an attacker enumerating local accounts and groups to understand the environment post-compromise.
+
+**MITRE ATT&CK Reference:** https://attack.mitre.org/techniques/T1087/001/
+
+### Run the Test
+
+```powershell
+Invoke-AtomicTest T1087.001
+```
+
+### Detecting T1087.001 in Splunk
+
+```
+index=endpoint technique_id=T1087
+```
+
+**Result: Detected — Sysmon Event ID 1 (Process Creation)**
+
+### Key Detection Details
+
+| Field | Value |
+|---|---|
+| Event ID | 1 (Sysmon — Process Creation) |
+| Process | cmdkey.exe (PID 4128) |
+| Parent Process | powershell.exe |
+| User | ASWINAD\Administrator |
+| Host | Target-PC.aswinAD.local |
+
+### Commands Executed by Atomic Red Team
+
+```
+net user
+get-localuser
+get-localgroupmember -group Users
+cmdkey.exe /list
+ls C:/Users
+get-childitem C:\Users\
+dir C:\Users\
+get-localgroup
+net localgroup
+```
+
+These are all classic local account and group enumeration commands an attacker runs during the Discovery phase.
+
+---
+
+## Phase 7 — T1003.001 (LSASS Credential Dump)
+
+This technique simulates an attacker dumping credentials from LSASS memory.
+
+**MITRE ATT&CK Reference:** https://attack.mitre.org/techniques/T1003/001/
+
+### Run the Test
+
+```powershell
+Invoke-AtomicTest T1003.001
+```
+
+### Detecting T1003.001 in Splunk
+
+```
+index=endpoint technique_id=T1003
+```
+
+**Result: 3 events detected**
+
+### Event Codes Triggered
+
+| Event ID | Description |
+|---|---|
+| 1 (Sysmon) | Process Creation — `xordump.exe` launched by `powershell.exe` |
+
+### Key Detection Details
+
+| Field | Value |
+|---|---|
+| Event ID | 1 (Sysmon — Process Creation) |
+| Process | xordump.exe |
+| Parent Process | powershell.exe |
+| User | ASWINAD\Administrator |
+| Host | Target-PC.aswinAD.local |
+| Action | Dumped LSASS memory to `C:\Windows\Temp\lsass-xordump.t1003.001.dmp` |
+
+### Analysis
+
+Sysmon captured the full command line used to dump LSASS memory, including the output file path and process ID reference. The `xordump.exe` binary (an open-source LSASS dumping tool) was spawned directly by PowerShell, making parent-child process relationship a strong detection signal. The dump file path itself (`lsass-xordump.t1003.001.dmp`) is a high-fidelity indicator of credential dumping activity.
+
+---
+
+## Phase 8 — T1053.005 (Scheduled Task / Persistence)
+
+This technique simulates an attacker creating a scheduled task to maintain persistence on a compromised machine.
+
+**MITRE ATT&CK Reference:** https://attack.mitre.org/techniques/T1053/005/
+
+### Run the Test
+
+```powershell
+Invoke-AtomicTest T1053.005
+```
+
+### Detecting T1053.005 in Splunk
+
+```
+index=endpoint technique_id=T1053
+```
+
+**Result: 81 events detected**
+
+### Event Codes Triggered
+
+| Event ID | Description |
+|---|---|
+| 7 (Sysmon) | Image Loaded — `schtasks.exe` loaded `taskschd.dll` (Task Scheduler COM API) |
+| 1 (Sysmon) | Process Creation — `schtasks.exe` created with full command-line arguments |
+
+### Key Detection Details
+
+| Field | Value |
+|---|---|
+| Primary Process | schtasks.exe (PID 10784) |
+| Parent Process | cmd.exe → powershell.exe |
+| User | ASWINAD\Administrator |
+| Host | Target-PC.aswinAD.local |
+| Task Name | EventViewerBypass |
+| Trigger | ONLOGON, RL HIGHEST |
+| Image Loaded | `taskschd.dll` (Task Scheduler COM API) |
+
+### Commands Executed by Atomic Red Team
+
+```
+schtasks /Run /TN "EventViewerBypass"
+schtasks /Create /TN "EventViewerBypass" /TR "eventvwr.msc" /SC ONLOGON /RL HIGHEST
+cmd.exe /c reg add "HKCU\...\mscfile\shell\open\command" /ve /t REG_EXPAND_SZ /d "c:\windows\system32\calc.exe"
+```
+
+### Analysis
+
+The high event count (81) reflects the breadth of Task Scheduler activity captured by Sysmon — both `Image Load` (EID 7) and `Process Creation` (EID 1) events. The `EventViewerBypass` task name is a known UAC bypass technique. The combination of `schtasks.exe` spawned from `cmd.exe` under `powershell.exe`, with `ONLOGON` and `RL HIGHEST` flags, is a strong persistence indicator.
+
+---
+
+## Phase 9 — T1562.001 (Disable Windows Defender)
+
+This technique simulates an attacker disabling Windows Defender to evade detection.
+
+**MITRE ATT&CK Reference:** https://attack.mitre.org/techniques/T1562/001/
+
+### Run the Test
+
+```powershell
+Invoke-AtomicTest T1562.001
+```
+
+### Result — Not Detected
+
+```
+index=endpoint technique_id=T1562
+```
+
+**Result: 0 events**
+
+### Analysis
+
+Sub-test T1562.001-58 ("Freeze PPL-protected process with EDR-Freeze") failed with Exit code 1 because it required downloading `EDR-Freeze_1.0.zip` from the internet, which was unavailable in the lab environment. As a result, no meaningful activity was executed and no Sysmon registry modification events (Event ID 13) were generated.
+
+A secondary search also returned no results:
+```
+index=endpoint EventCode=13 TargetObject="*DisableRealtimeMonitoring*"
+```
+
+> **Finding — Detection Gap:** T1562.001 was not detected by the current Splunk/Sysmon configuration, indicating a detection gap for Defense Evasion techniques. Recommended improvement: deploy custom Sysmon rules targeting `DisableRealtimeMonitoring` registry key modifications to close this gap.
+
+> **Note:** After running this test, re-enable Defender manually:
+> ```powershell
+> Set-MpPreference -DisableRealtimeMonitoring $false
+> ```
+
+---
+
+## Summary of All Attacks
+
+| # | Attack | Tactic | Tool | Result |
+|---|---|---|---|---|
+| 1 | RDP Brute Force | Initial Access | Hydra | Detected — EID 4625 + 4624 |
+| 2 | T1136.001 Create Local Account | Persistence | Atomic Red Team | 12 events, 6 Event IDs |
+| 3 | T1059.001 PowerShell Execution | Execution | Atomic Red Team | 524 events |
+| 4 | T1087.001 Local Account Discovery | Discovery | Atomic Red Team | Detected — Sysmon EID 1 |
+| 5 | T1003.001 LSASS Credential Dump | Credential Access | Atomic Red Team | 3 events — Sysmon EID 1 (xordump.exe) |
+| 6 | T1053.005 Scheduled Task | Persistence | Atomic Red Team | 81 events — Sysmon EID 1 + EID 7 |
+| 7 | T1562.001 Disable Defender | Defense Evasion | Atomic Red Team | Not Detected — detection gap identified |
+
+---
+
+## Key Findings
+
+1. **SwiftOnSecurity Sysmon config outperforms defaults** — T1136.001 detected 12 events vs. zero in the reference tutorial.
+2. **Detection gap identified for T1562.001** — Defense Evasion techniques require additional Sysmon tuning.
+3. **High-volume telemetry from T1059.001** — 524 events in 15 minutes highlights the need for alert tuning to reduce noise.
 
 ---
