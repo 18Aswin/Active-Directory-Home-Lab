@@ -21,7 +21,7 @@ The lab was built following the MyDFIR 5-part Active Directory series, with seve
 │  ┌──────────────┐        ┌──────────────────────┐   │
 │  │  Kali Linux  │        │   Windows 11 Ent.    │   │
 │  │  (Attacker)  │──────▶│   (Target Machine)    │  |
-│  │192.168.10.250│  RDP   │  192.168.10.100      │   │
+│  │192.168.10.200│  RDP   │  192.168.10.100      │   │
 │  └──────────────┘ Attack └──────────┬───────────┘   │
 │                                     │ Logs          │
 │  ┌──────────────┐        ┌──────────▼───────────┐   │
@@ -57,7 +57,7 @@ The lab was built following the MyDFIR 5-part Active Directory series, with seve
 | AD-SERVER01 | Windows Server 2022 | 192.168.10.20 | Domain Controller (aswinAD.local) |
 | Target-PC | Windows 11 Enterprise Eval | 192.168.10.100 | Domain-joined Target Endpoint |
 | Splunk-Server | Ubuntu Server 22.04 | 192.168.10.10 | SIEM (Splunk 10.2.2) |
-| Kali | Kali Linux | 192.168.10.250 | Attacker Machine |
+| Kali | Kali Linux | 192.168.10.200 | Attacker Machine |
 
 **Host Machine Specs:**
 - OS: Windows 11
@@ -97,7 +97,7 @@ The lab was built following the MyDFIR 5-part Active Directory series, with seve
 - Hydra successfully brute forced EWhite's RDP credentials using a custom wordlist
 - Splunk detected multiple **Event ID 4625** (failed logon) events in rapid succession — a clear brute force signature
 - **Event ID 4624** (successful logon) captured the moment the attack succeeded
-- Source IP `192.168.10.250` (Kali Linux) was visible in expanded event details
+- Source IP `192.168.10.200` (Kali Linux) was visible in expanded event details
 
 ### T1136.001 — Create Local Account (Persistence)
 - Executed persistence technique via Atomic Red Team on the Target-PC
