@@ -8,8 +8,6 @@
 
 This project simulates a real-world enterprise network environment inside VirtualBox. It covers both **blue team (defensive)** and **red team (offensive)** security operations — making it a complete end-to-end cybersecurity lab.
 
-The lab was built following the MyDFIR 5-part Active Directory series, with several real-world adaptations made due to hardware constraints and software compatibility challenges — all of which are documented in detail.
-
 ---
 
 ## Network Diagram
